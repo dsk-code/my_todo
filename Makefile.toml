@@ -1,0 +1,21 @@
+[env]
+PORT = "8000"
+
+[tasks.format]
+command = "cargo"
+args = ["fmt", "--", "--emit=files", "${@}" ]
+
+[tasks.clippy]
+command = "cargo"
+args = ["clippy", "${@}" ]
+
+[tasks.run]
+command = "cargo"
+args = [ "run" ]
+
+[tasks.my-flow]
+dependencies = [
+    "format",
+    "clippy",
+    "run"
+]

@@ -155,3 +155,10 @@ mod test {
         assert!(res.is_ok());
     }
 }
+
+#[cfg(test)]
+impl CreateTodo {
+    pub fn new(text: String) -> Self {
+        Self { text }
+    }
+}

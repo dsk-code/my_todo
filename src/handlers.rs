@@ -3,7 +3,6 @@ use axum::{
     extract::{Extension, FromRequest, Path, Request}, 
     http::StatusCode, 
     response::IntoResponse,
-    BoxError,
     Json
 };
 use serde::de::DeserializeOwned;
@@ -18,9 +17,7 @@ pub struct  ValidatedJson<T>(T);
 impl<T, B> FromRequest<B> for ValidatedJson<T>
 where
     T: DeserializeOwned + Validate,
-    B: http_body::Body + Send + Sync,
-    B::Data: Send,
-    B::Error: Into<BoxError>,
+    B: Send + Sync,
 {
     type Rejection = (StatusCode, String);
 

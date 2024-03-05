@@ -11,11 +11,51 @@ args = ["clippy", "${@}" ]
 
 [tasks.run]
 command = "cargo"
-args = [ "run" ]
+args = ["watch", "-x", "run"]
 
 [tasks.my-flow]
 dependencies = [
     "format",
     "clippy",
-    "run"
 ]
+
+# -- docker start --
+
+[tasks.build]
+command = "docker-compose"
+args = ["build"]
+
+[tasks.db]
+command = "docker-compose"
+args = ["up"]
+dependencies = ["build"]
+
+# -- sqlx migratte --
+
+[tasks.install-sqlx-cli]
+command = "cargo"
+args = ["install", "sqlx-cli"]
+
+[tasks.sqlx-db-create]
+command = "sqlx"
+args = ["db", "create"]
+dependencies = ["install-sqlx-cli"]
+
+[tasks.sqlx-migrate-run]
+command = "sqlx"
+args = ["migrate", "run"]
+dependencies = ["sqlx-db-create"]
+
+[tasks.dev]
+command = "cargo"
+args = ["watch", "-x", "run"]
+dependencies = [
+    "sqlx-migrate-run",
+    "my-flow",
+]
+
+# -- test --
+
+[tasks.test]
+command = "cargo"
+args = ["test"]

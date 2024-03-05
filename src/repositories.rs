@@ -1,11 +1,11 @@
 use std::{
     collections::HashMap,
-    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard}
+    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 
+use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use anyhow::Context;
 use validator::Validate;
 
 #[derive(Debug, Error)]
@@ -14,7 +14,6 @@ enum RepositoryError {
     NotFound(i32),
 }
 pub trait TodoRepository: Clone + std::marker::Send + std::marker::Sync + 'static {
-
     fn create(&self, payload: CreateTodo) -> Todo;
     fn find(&self, id: i32) -> Option<Todo>;
     fn all(&self) -> Vec<Todo>;
@@ -139,13 +138,15 @@ mod test {
         assert_eq!(vec![expected], todo);
 
         let text = "update todo text".to_string();
-        let todo = repository.update(
-                1, 
-            UpdateTodo { 
-                text: Some(text.clone()), 
-                completed: Some(true),
-            },
-        ).expect("failed update todo.");
+        let todo = repository
+            .update(
+                1,
+                UpdateTodo {
+                    text: Some(text.clone()),
+                    completed: Some(true),
+                },
+            )
+            .expect("failed update todo.");
         assert_eq!(
             Todo {
                 id,

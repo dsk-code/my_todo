@@ -1,17 +1,17 @@
+use crate::repositories::{CreateTodo, TodoRepository, UpdateTodo};
 use axum::{
     async_trait,
-    extract::{Extension, FromRequest, Path, Request}, 
-    http::StatusCode, 
+    extract::{Extension, FromRequest, Path, Request},
+    http::StatusCode,
     response::IntoResponse,
-    Json
+    Json,
 };
 use serde::de::DeserializeOwned;
 use std::sync::Arc;
 use validator::Validate;
-use crate::repositories::{CreateTodo, TodoRepository, UpdateTodo};
 
 #[derive(Debug)]
-pub struct  ValidatedJson<T>(T);
+pub struct ValidatedJson<T>(T);
 
 #[async_trait]
 impl<T, B> FromRequest<B> for ValidatedJson<T>
@@ -22,10 +22,12 @@ where
     type Rejection = (StatusCode, String);
 
     async fn from_request(req: Request, state: &B) -> Result<Self, Self::Rejection> {
-        let Json(value) = Json::<T>::from_request(req, state).await.map_err(|rejection| {
-            let message = format!("Json parse error: [{}]", rejection);
-            (StatusCode::BAD_REQUEST, message)
-        })?;
+        let Json(value) = Json::<T>::from_request(req, state)
+            .await
+            .map_err(|rejection| {
+                let message = format!("Json parse error: [{}]", rejection);
+                (StatusCode::BAD_REQUEST, message)
+            })?;
         value.validate().map_err(|rejection| {
             let message = format!("Validation error: [{}]", rejection).replace('\n', ", ");
             (StatusCode::BAD_REQUEST, message)
@@ -62,7 +64,9 @@ pub async fn update_todo<T: TodoRepository>(
     Extension(repository): Extension<Arc<T>>,
     ValidatedJson(payload): ValidatedJson<UpdateTodo>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let todo = repository.update(id, payload).or(Err(StatusCode::NOT_FOUND))?;
+    let todo = repository
+        .update(id, payload)
+        .or(Err(StatusCode::NOT_FOUND))?;
     Ok((StatusCode::CREATED, Json(todo)))
 }
 
@@ -70,10 +74,8 @@ pub async fn delete_todo<T: TodoRepository>(
     Path(id): Path<i32>,
     Extension(repository): Extension<Arc<T>>,
 ) -> StatusCode {
-    repository.delete(id).map(|_| StatusCode::NO_CONTENT).unwrap_or(StatusCode::NOT_FOUND)
+    repository
+        .delete(id)
+        .map(|_| StatusCode::NO_CONTENT)
+        .unwrap_or(StatusCode::NOT_FOUND)
 }
-
-
-
-
-

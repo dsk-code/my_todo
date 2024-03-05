@@ -7,12 +7,15 @@ use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use validator::Validate;
+use axum::async_trait;
 
 #[derive(Debug, Error)]
 enum RepositoryError {
     #[error("NotFound, id is {0}")]
     NotFound(i32),
 }
+
+#[async_trait]
 pub trait TodoRepository: Clone + std::marker::Send + std::marker::Sync + 'static {
     fn create(&self, payload: CreateTodo) -> Todo;
     fn find(&self, id: i32) -> Option<Todo>;

@@ -86,12 +86,12 @@ impl TodoRepository for TodoRepositoryForMemory {
 
     fn find(&self, id: i32) -> Option<Todo> {
         let store = self.read_store_ref();
-        store.get(&id).map(|todo| todo.clone())
+        store.get(&id).cloned()
     }
 
     fn all(&self) -> Vec<Todo> {
         let store = self.read_store_ref();
-        Vec::from_iter(store.values().map(|todo| todo.clone()))
+        Vec::from_iter(store.values().cloned())
     }
 
     fn update(&self, id: i32, payload: UpdateTodo) -> anyhow::Result<Todo> {

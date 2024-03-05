@@ -48,7 +48,7 @@ dependencies = ["sqlx-db-create"]
 
 [tasks.dev]
 command = "cargo"
-args = ["watch", "-x", "run"]
+args = ["run"]
 dependencies = [
     "sqlx-migrate-run",
     "my-flow",

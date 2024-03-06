@@ -59,3 +59,8 @@ dependencies = [
 [tasks.test]
 command = "cargo"
 args = ["test"]
+
+# standalone test
+[tasks.test-s]
+command = "cargo"
+args = ["test", "--no-default-features"]

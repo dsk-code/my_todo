@@ -40,7 +40,10 @@ pub async fn create_todo<T: TodoRepository>(
     Extension(repository): axum::Extension<Arc<T>>,
     ValidatedJson(payload): ValidatedJson<CreateTodo>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let todo = repository.create(payload).await.or(Err(StatusCode::NOT_FOUND))?;
+    let todo = repository
+        .create(payload)
+        .await
+        .or(Err(StatusCode::NOT_FOUND))?;
     Ok((StatusCode::CREATED, Json(todo)))
 }
 

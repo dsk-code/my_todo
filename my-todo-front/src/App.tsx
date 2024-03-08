@@ -2,24 +2,34 @@ import { useState, FC } from "react";
 import 'modern-css-reset';
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import { NewTodoPayload, Todo } from "./types/todo";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Stack } from "@mui/material";
 import TodoForm from "./components/TodoForm";
+import TodoList from "./components/TodoList";
+import { addTodoItem } from "./lib/api/todo";
 
 
 const TodoApp: FC = () => {
   const [todos, setTodos] = useState<Todo[]>([])
-  const createId = () => todos.length + 1
 
   const onSubmit = async (payload: NewTodoPayload) => {
     if (!payload.text) return
-    setTodos((prev) => [
-      {
-        id: createId(),
-        text: payload.text,
-        completed: false,
-      },
-      ...prev,
-    ])
+
+    const newTodo = await addTodoItem(payload)
+    setTodos((prev) => [newTodo, ...prev])
+  }
+
+  const onUpdate = (updateTodo: Todo) => {
+    setTodos(
+      todos.map((todo) => {
+        if (todo.id === updateTodo.id) {
+          return {
+            ...todo,
+            ...updateTodo,
+          }
+        }
+        return todo
+      })
+    )
   }
 
   return (
@@ -49,7 +59,10 @@ const TodoApp: FC = () => {
         }}
       >
         <Box maxWidth={700} width="100%">
-          <TodoForm onSubmit={onSubmit} />
+          <Stack spacing={5}>
+            <TodoForm onSubmit={onSubmit} />
+            <TodoList todos={todos} onUpdate={onUpdate} />
+          </Stack>
         </Box>
       </Box>
     </>

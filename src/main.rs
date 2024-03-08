@@ -4,13 +4,16 @@ mod repositories;
 use crate::repositories::{TodoRepository, TodoRepositoryForDb};
 use axum::{
     extract::Extension,
+    http::HeaderValue,
     routing::{get, post},
     Router,
 };
 use dotenv::dotenv;
 use handlers::{all_todo, create_todo, delete_todo, find_todo, update_todo};
+use hyper::header::CONTENT_TYPE;
 use sqlx::PgPool;
 use std::{env, sync::Arc};
+use tower_http::cors::{Any, CorsLayer};
 
 #[tokio::main]
 async fn main() {
@@ -24,7 +27,7 @@ async fn main() {
     tracing::debug!("start connect database...");
     let pool = PgPool::connect(database_url)
         .await
-        .expect(&format!("fail connect database, url is [{}]", database_url));
+        .unwrap_or_else(|_| panic!("fail connect database, url is [{}]", database_url));
     let repository = TodoRepositoryForDb::new(pool.clone());
     let app = create_app(repository);
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
@@ -42,6 +45,12 @@ fn create_app<T: TodoRepository>(repository: T) -> Router {
                 .patch(update_todo::<T>),
         )
         .layer(Extension(Arc::new(repository)))
+        .layer(
+            CorsLayer::new()
+                .allow_origin("http://localhost:3001".parse::<HeaderValue>().unwrap())
+                .allow_methods(Any)
+                .allow_headers(vec![CONTENT_TYPE]),
+        )
 }
 
 async fn root() -> &'static str {

@@ -1,3 +1,4 @@
+use crate::handlers::ValidatedJson;
 use crate::repositories::todo::{CreateTodo, TodoRepository, UpdateTodo};
 use axum::{
     extract::{Extension, Path},
@@ -6,7 +7,6 @@ use axum::{
     Json,
 };
 use std::sync::Arc;
-use crate::handlers::ValidatedJson;
 
 pub async fn create_todo<T: TodoRepository>(
     Extension(repository): axum::Extension<Arc<T>>,

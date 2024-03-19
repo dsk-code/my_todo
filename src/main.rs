@@ -1,21 +1,18 @@
 mod handlers;
 mod repositories;
 
-use crate::repositories::label::{LabelRepositoryForDb, LabelRepository};
-use crate::repositories::todo::{
-    TodoRepository, 
-    TodoRepositoryForDb
-};
+use crate::repositories::label::{LabelRepository, LabelRepositoryForDb};
+use crate::repositories::todo::{TodoRepository, TodoRepositoryForDb};
 
 use axum::{
     extract::Extension,
     http::HeaderValue,
-    routing::{get, post, delete},
+    routing::{delete, get, post},
     Router,
 };
 use dotenv::dotenv;
 use handlers::{
-    label::{create_label, all_label, delete_label},
+    label::{all_label, create_label, delete_label},
     todo::{all_todo, create_todo, delete_todo, find_todo, update_todo},
 };
 use hyper::header::CONTENT_TYPE;
@@ -38,32 +35,30 @@ async fn main() {
         .unwrap_or_else(|_| panic!("fail connect database, url is [{}]", database_url));
     let app = create_app(
         TodoRepositoryForDb::new(pool.clone()),
-        LabelRepositoryForDb::new(pool.clone()));
+        LabelRepositoryForDb::new(pool.clone()),
+    );
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
 
-fn create_app<Todo: TodoRepository, Label: LabelRepository>(todo_repository: Todo, label_repository: Label) -> Router {
+fn create_app<Todo: TodoRepository, Label: LabelRepository>(
+    todo_repository: Todo,
+    label_repository: Label,
+) -> Router {
     Router::new()
         .route("/", get(root))
-        .route(
-            "/todos",
-            post(create_todo::<Todo>)
-            .get(all_todo::<Todo>)
-        )
+        .route("/todos", post(create_todo::<Todo>).get(all_todo::<Todo>))
         .route(
             "/todos/:id",
             get(find_todo::<Todo>)
-            .delete(delete_todo::<Todo>)
-            .patch(update_todo::<Todo>),
+                .delete(delete_todo::<Todo>)
+                .patch(update_todo::<Todo>),
         )
         .route(
             "/labels",
-            post(create_label::<Label>)
-            .get(all_label::<Label>)
+            post(create_label::<Label>).get(all_label::<Label>),
         )
         .route("/labels/:id", delete(delete_label::<Label>))
-
         .layer(Extension(Arc::new(todo_repository)))
         .layer(Extension(Arc::new(label_repository)))
         .layer(
@@ -84,12 +79,8 @@ mod test {
 
     use super::*;
     use crate::repositories::label::test_utils::LabelRepositoryForMemory;
-    use crate::repositories::todo::{
-        test_utils::TodoRepositoryForMemory,
-        CreateTodo,
-        TodoEntity,
-    };
-    
+    use crate::repositories::todo::{test_utils::TodoRepositoryForMemory, CreateTodo, TodoEntity};
+
     use axum::response::Response;
     use axum::{
         body,
@@ -131,16 +122,14 @@ mod test {
         label
     }
 
-    fn labels_values_tuple() -> (Vec<i32>, Vec<Label>){
+    fn labels_values_tuple() -> (Vec<i32>, Vec<Label>) {
         let id = 1;
         (
             vec![id],
-            vec![
-                Label {
-                    id,
-                    name: String::from("label test 1"),
-                }
-            ],
+            vec![Label {
+                id,
+                name: String::from("label test 1"),
+            }],
         )
     }
 
@@ -155,7 +144,10 @@ mod test {
             Method::POST,
             r#"{ "text": "should_return_created_todo", "labels": [1] }"#.to_string(),
         );
-        let res = create_app(todo_repository, label_repository).oneshot(req).await.unwrap();
+        let res = create_app(todo_repository, label_repository)
+            .oneshot(req)
+            .await
+            .unwrap();
         let todo = res_to_todo(res).await;
         assert_eq!(expected, todo);
     }
@@ -181,7 +173,10 @@ mod test {
             .await
             .expect("failed create todo");
         let req = build_todo_req_with_empty(Method::GET, "/todos/1");
-        let res = create_app(todo_repository, label_repository).oneshot(req).await.unwrap();
+        let res = create_app(todo_repository, label_repository)
+            .oneshot(req)
+            .await
+            .unwrap();
         let todo = res_to_todo(res).await;
         assert_eq!(expected, todo);
     }
@@ -193,11 +188,17 @@ mod test {
         let todo_repository = TodoRepositoryForMemory::new(labels.clone());
         let label_repository = LabelRepositoryForMemory::new();
         todo_repository
-            .create(CreateTodo::new("should_get_all_todos".to_string(), label_id))
+            .create(CreateTodo::new(
+                "should_get_all_todos".to_string(),
+                label_id,
+            ))
             .await
             .expect("failed create todo");
         let req = build_todo_req_with_empty(Method::GET, "/todos");
-        let res = create_app(todo_repository, label_repository).oneshot(req).await.unwrap();
+        let res = create_app(todo_repository, label_repository)
+            .oneshot(req)
+            .await
+            .unwrap();
         let bytes = body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let body = String::from_utf8(bytes.to_vec()).unwrap();
         let todo: Vec<TodoEntity> = serde_json::from_str(&body)
@@ -220,7 +221,10 @@ mod test {
             Method::PATCH,
             r#"{"id": 1, "text": "should_update_todo", "completed": false}"#.to_string(),
         );
-        let res = create_app(todo_repository, label_repository).oneshot(req).await.unwrap();
+        let res = create_app(todo_repository, label_repository)
+            .oneshot(req)
+            .await
+            .unwrap();
         let todo = res_to_todo(res).await;
         assert_eq!(expected, todo);
     }
@@ -231,11 +235,14 @@ mod test {
         let todo_repository = TodoRepositoryForMemory::new(labels.clone());
         let label_repository = LabelRepositoryForMemory::new();
         todo_repository
-            .create(CreateTodo::new("should_delete_todo".to_string(),label_id))
+            .create(CreateTodo::new("should_delete_todo".to_string(), label_id))
             .await
             .expect("failed delete todo");
         let req = build_todo_req_with_empty(Method::DELETE, "/todos/1");
-        let res = create_app(todo_repository, label_repository).oneshot(req).await.unwrap();
+        let res = create_app(todo_repository, label_repository)
+            .oneshot(req)
+            .await
+            .unwrap();
         assert_eq!(StatusCode::NO_CONTENT, res.status());
     }
 
@@ -247,11 +254,14 @@ mod test {
         let req = build_todo_req_with_json(
             "/labels",
             Method::POST,
-            r#"{ "name": "should_create_label" }"#.to_string()
+            r#"{ "name": "should_create_label" }"#.to_string(),
         );
-        let res = create_app(todo_repository, label_repository).oneshot(req).await.unwrap();
+        let res = create_app(todo_repository, label_repository)
+            .oneshot(req)
+            .await
+            .unwrap();
         let label = res_to_label(res).await;
-        assert_eq!(expected, label);    
+        assert_eq!(expected, label);
     }
 
     #[tokio::test]
@@ -264,7 +274,10 @@ mod test {
             .await
             .expect("failed all label");
         let req = build_todo_req_with_empty(Method::GET, "/labels");
-        let res = create_app(todo_repository, label_repository).oneshot(req).await.unwrap();
+        let res = create_app(todo_repository, label_repository)
+            .oneshot(req)
+            .await
+            .unwrap();
         let bytes = body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let body = String::from_utf8(bytes.to_vec()).unwrap();
         let label: Vec<Label> = serde_json::from_str(&body)
@@ -282,7 +295,10 @@ mod test {
             .await
             .expect("failed all label");
         let req = build_todo_req_with_empty(Method::DELETE, "/labels/1");
-        let res = create_app(todo_repository, label_repository).oneshot(req).await.unwrap();
+        let res = create_app(todo_repository, label_repository)
+            .oneshot(req)
+            .await
+            .unwrap();
         assert_eq!(StatusCode::NO_CONTENT, res.status());
     }
 }

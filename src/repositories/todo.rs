@@ -1,12 +1,11 @@
+use crate::repositories::RepositoryError;
 use anyhow::Ok;
 use axum::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgPool};
 use validator::Validate;
-use crate::repositories::RepositoryError;
 
 use super::label::Label;
-
 
 #[async_trait]
 pub trait TodoRepository: Clone + std::marker::Send + std::marker::Sync + 'static {
@@ -29,7 +28,7 @@ pub struct TodoWithLabelFromRow {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct TodoEntity {
     pub id: i32,
-    pub text: String, 
+    pub text: String,
     pub completed: bool,
     pub labels: Vec<Label>,
 }
@@ -62,19 +61,19 @@ fn fold_entities(rows: Vec<TodoWithLabelFromRow>) -> Vec<TodoEntity> {
             id: row.id,
             text: row.text.clone(),
             completed: row.completed,
-            labels
+            labels,
         });
     }
     accum
-        // .fold(vec![], |mut accum, current| {
-        //     accum.push(TodoEntity { 
-        //         id: current.id, 
-        //         text: current.text.clone(), 
-        //         completed: current.completed, 
-        //         labels: vec![],
-        //     });
-        //     accum
-        // })
+    // .fold(vec![], |mut accum, current| {
+    //     accum.push(TodoEntity {
+    //         id: current.id,
+    //         text: current.text.clone(),
+    //         completed: current.completed,
+    //         labels: vec![],
+    //     });
+    //     accum
+    // })
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Validate)]
@@ -126,7 +125,7 @@ impl TodoRepository for TodoRepositoryForDb {
         .bind(payload.text.clone())
         .fetch_one(&self.pool)
         .await?;
-        
+
         sqlx::query(
             r#"
                 INSERT INTO todo_labels ( todo_id, label_id )
@@ -410,7 +409,7 @@ pub mod test_utils {
             Self { text, labels }
         }
     }
-    
+
     type TodoDatas = HashMap<i32, TodoEntity>;
 
     #[derive(Debug, Clone)]
@@ -438,7 +437,8 @@ pub mod test_utils {
             let mut label_list = self.labels.iter().cloned();
             let labels = labels
                 .iter()
-                .map(|id| label_list.find(|label| label.id == *id).unwrap()).collect();
+                .map(|id| label_list.find(|label| label.id == *id).unwrap())
+                .collect();
             labels
         }
     }
@@ -462,7 +462,7 @@ pub mod test_utils {
                 .ok_or(RepositoryError::NotFound(id))?;
             Ok(todo)
         }
-        
+
         async fn all(&self) -> anyhow::Result<Vec<TodoEntity>> {
             let store = self.read_store_ref();
             Ok(Vec::from_iter(store.values().cloned()))
@@ -502,7 +502,7 @@ pub mod test_utils {
             let id = 1;
             let label = Label {
                 id: 1,
-                name: String::from("test label1")
+                name: String::from("test label1"),
             };
             let labels = vec![label.clone()];
             let expected = TodoEntity::new(id, text.clone(), labels.clone());
@@ -510,7 +510,10 @@ pub mod test_utils {
             // create
             let repository = TodoRepositoryForMemory::new(labels);
             let todo = repository
-                .create(CreateTodo { text, labels: vec![label.id] })
+                .create(CreateTodo {
+                    text,
+                    labels: vec![label.id],
+                })
                 .await
                 .expect("failed create todo");
             assert_eq!(expected, todo);
@@ -559,7 +562,7 @@ pub mod test_utils {
                 id: 2,
                 name: String::from("label 2"),
             };
-    
+
             let rows = vec![
                 TodoWithLabelFromRow {
                     id: 1,
@@ -591,22 +594,16 @@ pub mod test_utils {
                         id: 1,
                         text: String::from("todo 1"),
                         completed: false,
-                        labels: vec![
-                            label_1.clone(),
-                            label_2.clone(),
-                        ],
+                        labels: vec![label_1.clone(), label_2.clone(),],
                     },
                     TodoEntity {
                         id: 2,
                         text: String::from("todo 2"),
                         completed: false,
-                        labels: vec![
-                            label_1.clone(),
-                        ]
+                        labels: vec![label_1.clone(),]
                     },
-                ]    
+                ]
             );
         }
-    
     }
 }

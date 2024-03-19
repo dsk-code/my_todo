@@ -1,15 +1,15 @@
+use crate::repositories::RepositoryError;
 use anyhow::Ok;
 use axum::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use validator::Validate;
-use crate::repositories::RepositoryError;
 
 #[async_trait]
 pub trait LabelRepository: Clone + std::marker::Send + std::marker::Sync + 'static {
     async fn create(&self, name: String) -> anyhow::Result<Label>;
     async fn all(&self) -> anyhow::Result<Vec<Label>>;
-    async fn delete(&self, id: i32) -> anyhow::Result<()>; 
+    async fn delete(&self, id: i32) -> anyhow::Result<()>;
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, sqlx::FromRow)]
@@ -24,7 +24,6 @@ pub struct CreateLabel {
     #[validate(length(max = 100, message = "Over text length"))]
     pub name: String,
 }
-
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct UpdateLabel {
@@ -47,7 +46,7 @@ impl LabelRepositoryForDb {
 impl LabelRepository for LabelRepositoryForDb {
     async fn create(&self, name: String) -> anyhow::Result<Label> {
         let optional_label = sqlx::query_as::<_, Label>(
-        r#"
+            r#"
                 SELECT * FROM labels WHERE name = $1
             "#,
         )
@@ -58,9 +57,9 @@ impl LabelRepository for LabelRepositoryForDb {
         if let Some(label) = optional_label {
             return Err(RepositoryError::Duplicate(label.id).into());
         }
-        
+
         let label = sqlx::query_as::<_, Label>(
-        r#"
+            r#"
                 INSERT INTO labels ( name )
                 VALUES ( $1 )
                 RETURNING *
@@ -71,12 +70,11 @@ impl LabelRepository for LabelRepositoryForDb {
         .await?;
 
         Ok(label)
-
     }
 
     async fn all(&self) -> anyhow::Result<Vec<Label>> {
         let labels = sqlx::query_as::<_, Label>(
-        r#"
+            r#"
                 SELECT * FROM labels
                 ORDER BY labels.id ASC;
             "#,
@@ -89,7 +87,7 @@ impl LabelRepository for LabelRepositoryForDb {
 
     async fn delete(&self, id: i32) -> anyhow::Result<()> {
         sqlx::query(
-        r#"
+            r#"
                 DELETE FROM labels WHERE id = $1
             "#,
         )
@@ -125,20 +123,20 @@ mod test {
         let label_text = "test_label";
 
         // create
-        let label = repository.create(label_text.to_string())
+        let label = repository
+            .create(label_text.to_string())
             .await
             .expect("[create] returned Err");
         assert_eq!(label.name, label_text);
 
         // all
-        let labels = repository.all()
-            .await
-            .expect("[all] returned Err");
+        let labels = repository.all().await.expect("[all] returned Err");
         let label = labels.last().unwrap();
         assert_eq!(label.name, label_text);
 
         // delete
-        repository.delete(label.id)
+        repository
+            .delete(label.id)
             .await
             .expect("[delete] returned Err")
     }
@@ -155,27 +153,19 @@ pub mod test_utils {
 
     impl Label {
         pub fn new(id: i32, name: String) -> Self {
-            Self {
-                id,
-                name,
-            }
+            Self { id, name }
         }
     }
 
     impl CreateLabel {
         pub fn _new(name: String) -> Self {
-            Self {
-                name,
-            }
+            Self { name }
         }
     }
 
     impl UpdateLabel {
         pub fn _new(id: i32, name: String) -> Self {
-            Self {
-                id,
-                name,
-            }
+            Self { id, name }
         }
     }
 
@@ -191,7 +181,6 @@ pub mod test_utils {
             LabelRepositoryForMemory {
                 store: Arc::default(),
             }
-            
         }
 
         fn write_store_ref(&self) -> RwLockWriteGuard<LabelDatas> {
@@ -202,9 +191,9 @@ pub mod test_utils {
             self.store.read().unwrap()
         }
     }
-    
+
     #[async_trait]
-    impl LabelRepository for LabelRepositoryForMemory{
+    impl LabelRepository for LabelRepositoryForMemory {
         async fn create(&self, name: String) -> anyhow::Result<Label> {
             let mut store = self.write_store_ref();
             let id = (store.len() + 1) as i32;
@@ -235,20 +224,18 @@ pub mod test_utils {
 
             // create
             let repository = LabelRepositoryForMemory::new();
-            let label = repository.create("label name".to_string())
+            let label = repository
+                .create("label name".to_string())
                 .await
                 .expect("faild create label");
             assert_eq!(expected, label);
 
             // all
-            let labels = repository.all()
-                .await
-                .expect("faild all label");
+            let labels = repository.all().await.expect("faild all label");
             assert_eq!(vec![expected], labels);
 
             // delete
-            let res = repository.delete(id)
-                .await;
+            let res = repository.delete(id).await;
             assert!(res.is_ok());
         }
     }

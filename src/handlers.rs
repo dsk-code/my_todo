@@ -1,5 +1,5 @@
-pub mod todo;
 pub mod label;
+pub mod todo;
 
 use axum::{
     async_trait,
@@ -9,7 +9,6 @@ use axum::{
 };
 use serde::de::DeserializeOwned;
 use validator::Validate;
-
 
 #[derive(Debug)]
 pub struct ValidatedJson<T>(T);

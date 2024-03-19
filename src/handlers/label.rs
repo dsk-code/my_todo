@@ -1,12 +1,12 @@
 use axum::{
     extract::{Extension, Path},
-    response::IntoResponse,
     http::StatusCode,
-    Json
+    response::IntoResponse,
+    Json,
 };
 use std::sync::Arc;
 
-use crate::repositories::label::{LabelRepository, CreateLabel};
+use crate::repositories::label::{CreateLabel, LabelRepository};
 
 use super::ValidatedJson;
 
@@ -25,10 +25,7 @@ pub async fn create_label<T: LabelRepository>(
 pub async fn all_label<T: LabelRepository>(
     Extension(repository): Extension<Arc<T>>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let labels = repository
-        .all()
-        .await
-        .unwrap();
+    let labels = repository.all().await.unwrap();
     Ok((StatusCode::OK, Json(labels)))
 }
 

@@ -1,5 +1,5 @@
-pub mod todo;
 pub mod label;
+pub mod todo;
 
 use thiserror::Error;
 

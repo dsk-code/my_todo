@@ -1,19 +1,36 @@
 import { FC, useState } from "react"
-import { NewTodoPayload } from "../types/todo"
-import { Box, Button, TextField, Paper, Grid } from '@mui/material'
+import { Label, NewTodoPayload } from "../types/todo"
+import { 
+    Box,
+    Button,
+    FormControlLabel,
+    Checkbox,
+    Stack,
+    Modal,
+    Chip,
+    TextField,
+    Paper,
+    Grid
+} from '@mui/material'
+import { modalInnerStyle } from "../styles/modal";
+import { toggleLabels } from "../lib/toggleLabels";;
 
 type Props = {
     onSubmit: (newTodo: NewTodoPayload) => void
+    labels: Label[]
 }
 
-const TodoForm: FC<Props> = ({onSubmit}) => {
+const TodoForm: FC<Props> = ({ onSubmit, labels }) => {
     const [editText, setEditText] = useState('')
+    const [editLabels, setEditLabels] = useState<Label[]>([])
+    const [openLabelModal, setOpenLabelModal] = useState(false)
 
     const addTodoHandler = async () => {
         if (!editText) return
 
         onSubmit({
             text: editText,
+            labels: editLabels.map((label) => label.id),
         })
         setEditText('')
     }
@@ -31,12 +48,44 @@ const TodoForm: FC<Props> = ({onSubmit}) => {
                             fullWidth
                         />
                     </Grid>
-                    <Grid item xs={9} />
+                    <Grid item xs={12}>
+                        <Stack direction="row" spacing={1}>
+                            {editLabels.map((label) => (
+                                <Chip key={label.id} label={label.name} />
+                            ))}
+                        </Stack>
+                    </Grid>
+                    <Grid item xs={3} xl={7}>
+                        <Button
+                            onClick={() => setOpenLabelModal(true)}
+                            fullWidth
+                            color="secondary"
+                        >
+                            select label
+                        </Button>
+                    </Grid>
+                    <Grid item xs={6} />
                     <Grid item xs={3}>
                         <Button onClick={addTodoHandler} fullWidth>
                             add todo
                         </Button>
                     </Grid>
+                    <Modal open={openLabelModal} onClose={() => setOpenLabelModal(false)}>
+                        <Box sx={modalInnerStyle}>
+                            <Stack>
+                                {labels.map((label) => (
+                                    <FormControlLabel
+                                        key={label.id}
+                                        control={<Checkbox checked={editLabels.includes(label)} />}
+                                        label={label.name}
+                                        onChange={() =>
+                                            setEditLabels((prev) => toggleLabels(prev, label))
+                                        }
+                                    />
+                                ))}
+                            </Stack>
+                        </Box>
+                     </Modal>
                 </Grid>
             </Box>
         </Paper>
